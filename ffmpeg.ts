@@ -1,13 +1,15 @@
 import type { PluginOption, ViteDevServer } from "vite";
-import { exec, spawn } from "node:child_process";
-import { Writable } from "stream";
+import {
+  ChildProcessWithoutNullStreams,
+  exec,
+  spawn,
+} from "node:child_process";
+import { Readable, Writable } from "stream";
 
 let isFfmpegInstalled = false;
 let isFfmpegReady = false; // ready to receive a new frame?
 
-let format: string;
 let framesRecorded = 0;
-let totalFrames = 0;
 
 export const ffmpeg = (): PluginOption => ({
   name: "ffmpeg-export",
@@ -28,7 +30,10 @@ export const ffmpeg = (): PluginOption => ({
       console.warn(`${msg}`);
     }
 
+    let command: ChildProcessWithoutNullStreams;
     let stdin: Writable;
+    let stdout: Readable;
+    let stderr: Readable;
 
     // this message is received when client starts a new recording
     server.ws.on("ssam:ffmpeg", async (data, client) => {
@@ -38,8 +43,6 @@ export const ffmpeg = (): PluginOption => ({
         console.warn(msg);
         return;
       }
-
-      ({ totalFrames } = data);
 
       // reset frame count per each recording
       framesRecorded = 0;
@@ -53,15 +56,26 @@ export const ffmpeg = (): PluginOption => ({
               '-movflags', '+faststart',
             ]
 
-      const command = spawn("ffmpeg", [
+      command = spawn("ffmpeg", [
         "-y",
         ...inputArgs,
         ...outputArgs,
+        "-report",
         `./out.mp4`,
       ]);
 
       // get stdin from ffmpeg process
-      ({ stdin } = command);
+      ({ stdin, stdout, stderr } = command);
+
+      // https://nodejs.org/api/child_process.html#child-process
+      // need to consume data as ffmpeg also does stderr.write(cb) and waiting.
+      // otherwise, it fills up the buffer
+      // thanks to greweb for pointing it out
+
+      // REVIEW: there must be a more elegant way to handle this.
+      // I tried spanw(... { stdio: 'ignore' }) but with error.
+      stdout.on("data", (data) => {});
+      stderr.on("data", (data) => {});
 
       isFfmpegReady = true;
 
@@ -77,11 +91,11 @@ export const ffmpeg = (): PluginOption => ({
       // write frame and when it's written, ask for next frame
       const buffer = Buffer.from(data.image.split(",")[1], "base64");
 
-      // FIX: when exporting large/long video (4k 60fps),
-      // stdin.write() stops being called after 10-15 seconds.
-      // when logged, buffer is received correctly,
-      // can go into writePromise, but it never gets inside stdin.write()
-      // - is it because stdin is overwhelmed by incoming data?
+      // REVIEW:
+      // it is designed to process image and only then request a new frame
+      // but, seeing ffmpeg log, there still is some difference between
+      // what frame gets sent from client and what frame is being processed by ffmpeg.
+      // need to look closer.
       try {
         const written = await writePromise(stdin, buffer);
 
@@ -90,6 +104,7 @@ export const ffmpeg = (): PluginOption => ({
           client.send("ssam:ffmpeg-reqframe");
 
           framesRecorded++;
+
           // send log to client
           const msg = `recording frame... ${data.frame}`;
           client.send("ssam:log", { msg });

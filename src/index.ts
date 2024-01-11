@@ -11,12 +11,20 @@
 // - vitejs?
 // - ffmpeg?
 
+// TODO:
+// - log ffmpeg stdout, stderr
+// - cat *.png | ffmpeg image2pipe (to see if it works without node)
+// - create web socket server (w/ot using Vite)
+// - look into `stdin.write` how backpressure, cb and drain works
+// - try node-ffmpeg-stream package
+// - export PNG without ffmpeg (in export plugin)
+
 const canvas = document.createElement("canvas");
 document.body.appendChild(canvas);
 const ctx = canvas.getContext("2d")!;
 
-const width = 5400;
-const height = 5400;
+const width = 7200;
+const height = 7200;
 
 canvas.width = width;
 canvas.height = height;
@@ -26,7 +34,7 @@ canvas.style.height = `${height / 12}px`;
 // sketch variables
 let frame = 0;
 const fps = 60;
-const totalFrames = 3600;
+const totalFrames = 2400;
 let recording = false;
 let newFrameRequested = false;
 
@@ -105,7 +113,10 @@ function animate() {
     frame++;
   } else {
     frame = 0;
-    if (recording) recording = false;
+    if (recording) {
+      recording = false;
+      import.meta.hot && import.meta.hot.send(`${prefix}:ffmpeg-done`);
+    }
   }
   window.requestAnimationFrame(animate);
 }
