@@ -73,7 +73,7 @@ export const ffmpeg = (): PluginOption => ({
       // thanks to greweb for pointing it out
 
       // REVIEW: there must be a more elegant way to handle this.
-      // I tried spanw(... { stdio: 'ignore' }) but with error.
+      // I tried spawn(... { stdio: 'ignore' }) but with error.
       stdout.on("data", (data) => {});
       stderr.on("data", (data) => {});
 

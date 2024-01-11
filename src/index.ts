@@ -1,18 +1,7 @@
 // basic example to stream canvas image to ffmpeg and export mp4
 
-// FIX:
-// streaming stops in the middle
-// what i have discovered so far:
-// stdin.write() stops being executed at some point when expoting large mp4
-// on M1 Macbook Pro, stuck while exporting at 400~700 frame at 5400x5400px
-// - client issue?
-// - plugin issue?
-// - web socket?
-// - vitejs?
-// - ffmpeg?
-
 // TODO:
-// - log ffmpeg stdout, stderr
+// v log ffmpeg stdout, stderr
 // - cat *.png | ffmpeg image2pipe (to see if it works without node)
 // - create web socket server (w/ot using Vite)
 // - look into `stdin.write` how backpressure, cb and drain works
@@ -81,9 +70,9 @@ window.addEventListener("keydown", (e) => {
 animate();
 
 function animate() {
+  // canvas drawing
   ctx.fillStyle = `gray`;
   ctx.fillRect(0, 0, width, height);
-
   ctx.font = `800px monospace`;
   ctx.fillStyle = `black`;
   ctx.fillText(frame.toString(), width / 2, height / 2);
@@ -92,7 +81,6 @@ function animate() {
     if (recording) {
       if (!newFrameRequested) {
         // early return if frame not requested
-        // console.log("early return");
         window.requestAnimationFrame(animate);
         return;
       }
