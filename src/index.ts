@@ -12,18 +12,18 @@ const canvas = document.createElement("canvas");
 document.body.appendChild(canvas);
 const ctx = canvas.getContext("2d")!;
 
-const width = 7200;
-const height = 7200;
+const width = 1000;
+const height = 1000;
 
 canvas.width = width;
 canvas.height = height;
-canvas.style.width = `${width / 12}px`;
-canvas.style.height = `${height / 12}px`;
+canvas.style.width = `${width / 2}px`;
+canvas.style.height = `${height / 2}px`;
 
 // sketch variables
 let frame = 0;
 const fps = 60;
-const totalFrames = 2400;
+const totalFrames = 60;
 let recording = false;
 let newFrameRequested = false;
 
@@ -73,9 +73,10 @@ function animate() {
   // canvas drawing
   ctx.fillStyle = `gray`;
   ctx.fillRect(0, 0, width, height);
-  ctx.font = `800px monospace`;
+  ctx.font = `${height / 2}px monospace`;
+  ctx.textAlign = `center`;
   ctx.fillStyle = `black`;
-  ctx.fillText(frame.toString(), width / 2, height / 2);
+  ctx.fillText(frame.toString(), width / 2, height / 2 + height / 4);
 
   if (import.meta.hot) {
     if (recording) {

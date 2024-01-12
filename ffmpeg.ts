@@ -96,23 +96,21 @@ export const ffmpeg = (): PluginOption => ({
       // but, seeing ffmpeg log, there still is some difference between
       // what frame gets sent from client and what frame is being processed by ffmpeg.
       // need to look closer.
-      try {
-        const written = await writePromise(stdin, buffer);
 
-        if (written) {
-          // request next frame only after writing the current frame
-          client.send("ssam:ffmpeg-reqframe");
+      stdin.write(buffer, (err) => {
+        if (err) console.error(err);
+        return;
+      });
 
-          framesRecorded++;
+      // request next frame only after writing the current frame
+      client.send("ssam:ffmpeg-reqframe");
 
-          // send log to client
-          const msg = `recording frame... ${data.frame}`;
-          client.send("ssam:log", { msg });
-          console.log(msg);
-        }
-      } catch (e) {
-        console.error(e);
-      }
+      framesRecorded++;
+
+      // send log to client
+      const msg = `recording frame... ${data.frame}`;
+      client.send("ssam:log", { msg });
+      console.log(msg);
     });
 
     server.ws.on("ssam:ffmpeg-done", (_, client) => {
