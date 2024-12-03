@@ -25,4 +25,5 @@ dist-ssr
 
 dist
 output
+process
 *.mp4
