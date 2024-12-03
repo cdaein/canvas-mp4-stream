@@ -12,20 +12,20 @@ const canvas = document.createElement("canvas");
 document.body.appendChild(canvas);
 const ctx = canvas.getContext("2d")!;
 
-const width = 1000;
-const height = 1000;
+const width = 8000;
+const height = 6000;
 
 canvas.width = width;
 canvas.height = height;
-canvas.style.width = `${width / 2}px`;
-canvas.style.height = `${height / 2}px`;
+canvas.style.width = `${width / 20}px`;
+canvas.style.height = `${height / 20}px`;
 
 // sketch variables
 let frame = 0;
 const fps = 60;
 const totalFrames = 60;
 let recording = false;
-let newFrameRequested = false;
+let frameRequested = false;
 
 const prefix = `ssam`;
 
@@ -33,7 +33,7 @@ const prefix = `ssam`;
 if (import.meta.hot) {
   // only send a new frame when requested from plugin
   import.meta.hot.on(`${prefix}:ffmpeg-reqframe`, () => {
-    newFrameRequested = true;
+    frameRequested = true;
     console.log("new frame requested");
   });
   import.meta.hot.on("ssam:log", (data) => {
@@ -60,7 +60,7 @@ window.addEventListener("keydown", (e) => {
     } else {
       // finish current recording
       import.meta.hot && import.meta.hot.send(`${prefix}:ffmpeg-done`);
-      newFrameRequested = false;
+      frameRequested = false;
       recording = false;
     }
   }
@@ -80,7 +80,7 @@ function animate() {
 
   if (import.meta.hot) {
     if (recording) {
-      if (!newFrameRequested) {
+      if (!frameRequested) {
         // early return if frame not requested
         window.requestAnimationFrame(animate);
         return;
@@ -93,14 +93,14 @@ function animate() {
       });
 
       // set the flag false and wait for next request
-      newFrameRequested = false;
+      frameRequested = false;
       console.log("sent new frame", frame);
     }
   }
 
-  if (frame < totalFrames) {
-    frame++;
-  } else {
+  frame++;
+
+  if (frame === totalFrames) {
     frame = 0;
     if (recording) {
       recording = false;
